@@ -66,7 +66,7 @@ export function FileUpload({
   });
 
   return (
-    <div className="h-full w-full" {...getRootProps()}>
+    <div className="h-full min-w-0 w-full max-w-full overflow-hidden" {...getRootProps()}>
       <motion.div
         onClick={() => fileInputRef.current?.click()}
         whileHover="animate"
@@ -79,7 +79,7 @@ export function FileUpload({
           className="hidden"
           onChange={(event) => acceptFile(event.target.files?.[0])}
         />
-        <div className="pointer-events-none absolute inset-0 opacity-40 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-40 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
           <GridPattern />
         </div>
         <div className="relative z-20 flex h-full flex-col">
@@ -135,7 +135,7 @@ export function GridPattern() {
   const columns = 18;
   const rows = 8;
   return (
-    <div className="flex scale-105 flex-wrap items-center justify-center gap-px bg-neutral-900">
+    <div className="absolute inset-0 flex flex-wrap content-start gap-px overflow-hidden bg-neutral-900">
       {Array.from({ length: rows }).map((_, row) =>
         Array.from({ length: columns }).map((_, col) => {
           const index = row * columns + col;

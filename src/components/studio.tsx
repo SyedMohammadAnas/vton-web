@@ -255,7 +255,7 @@ export function Studio() {
           Personal use. CatVTON is non-commercial.
         </p>
 
-        <main className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden">
+        <main className="mx-auto grid min-h-0 w-full min-w-0 max-w-6xl flex-1 grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden">
           <FileUpload
             label="Person"
             hint="Full photo of the person"
