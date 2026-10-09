@@ -301,18 +301,21 @@ export function Studio() {
   const working = phase.kind === "queued" || phase.kind === "processing";
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-white text-neutral-950">
-      <div className="flex h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-white px-3 py-3 lg:overflow-hidden">
-        <header className="flex w-full items-center justify-between gap-3 rounded-full border-2 border-neutral-800 bg-white px-5 py-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold tracking-[0.18em]">ELYX</p>
-            <p className="hidden truncate text-[11px] text-neutral-600 sm:block">
-              Personal use. CatVTON is non-commercial.
-            </p>
+    <div className="relative h-dvh overflow-hidden bg-[#f4f4f5] text-neutral-950">
+      <div className="flex h-full w-full min-w-0 flex-col gap-5 overflow-x-hidden px-5 py-5 sm:px-8 sm:py-6 lg:overflow-hidden">
+        <header className="mx-auto flex w-full max-w-2xl items-center justify-between gap-8 rounded-full border border-neutral-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex min-w-0 items-center gap-2.5 pl-2">
+            <span className="inline-block h-4 w-4 shrink-0 rounded-sm bg-[#e8470b]" aria-hidden />
+            <div className="min-w-0">
+              <p className="text-lg font-semibold tracking-[0.16em]">ELYX</p>
+              <p className="hidden truncate text-[11px] text-neutral-600 sm:block">
+                Personal use. CatVTON is non-commercial.
+              </p>
+            </div>
           </div>
           <button
             type="button"
-            className="shrink-0 rounded-full border-2 border-neutral-800 px-4 py-1.5 text-sm"
+            className="shrink-0 rounded-full bg-[#e8470b] px-6 py-3 text-lg font-medium text-white"
             onMouseEnter={() => setHistoryOpen(true)}
             onClick={() => setHistoryOpen(true)}
           >
@@ -323,7 +326,7 @@ export function Studio() {
           Personal use. CatVTON is non-commercial.
         </p>
 
-        <main className="scrollbar-none grid min-h-0 w-full min-w-0 flex-1 grid-cols-1 gap-4 overflow-y-auto max-lg:auto-rows-[minmax(calc(100dvh-10rem),auto)] lg:grid-cols-3 lg:gap-8 lg:overflow-hidden">
+        <main className="scrollbar-none grid min-h-0 w-full min-w-0 flex-1 grid-cols-1 gap-8 overflow-y-auto max-lg:auto-rows-[minmax(calc(100dvh-12rem),auto)] lg:grid-cols-3 lg:gap-10 lg:overflow-hidden">
           <FileUpload
             label="Person"
             hint="Full photo of the person"
@@ -400,14 +403,14 @@ function ResultPanel({
   const showImage = revealed && phase.kind === "done" && Boolean(resultUrl);
 
   return (
-    <section className="relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border-2 border-neutral-800 bg-white lg:min-h-0">
+    <section className="relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border-2 border-[#e8470b] bg-white lg:min-h-0">
       <div className="flex items-center justify-between px-5 pt-5">
         <p className="text-base font-semibold">Result</p>
         {phase.kind !== "idle" && !showProgress ? (
           <p className="text-sm text-neutral-600">{phaseLabel(phase)}</p>
         ) : null}
       </div>
-      <div className="relative m-5 min-h-0 flex-1 overflow-hidden rounded-2xl border-2 border-neutral-700 bg-white">
+      <div className="relative m-5 min-h-0 flex-1 overflow-hidden rounded-2xl border-2 border-[#e8470b]/40 bg-white">
         {showImage ? (
           <div className="group relative h-full">
             {/* Local object URLs cannot go through next/image. */}
@@ -437,7 +440,7 @@ function ResultPanel({
           <>
             <NeuralBackground
               className="absolute inset-0"
-              color="#4338ca"
+              color="#e8470b"
               trailOpacity={0.14}
               particleCount={280}
               speed={1}
@@ -459,14 +462,14 @@ function ResultPanel({
             <button
               type="button"
               onClick={onReset}
-              className="flex flex-1 items-center justify-center rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white"
+              className="flex flex-1 items-center justify-center rounded-full bg-[#e8470b] px-4 py-2.5 text-sm font-semibold text-white"
             >
               Yes
             </button>
             <button
               type="button"
               onClick={onKeep}
-              className="flex flex-1 items-center justify-center rounded-full border-2 border-neutral-800 bg-white px-4 py-2.5 text-sm"
+              className="flex flex-1 items-center justify-center rounded-full border-2 border-[#e8470b] bg-white px-4 py-2.5 text-sm text-[#e8470b]"
             >
               No
             </button>
@@ -475,7 +478,7 @@ function ResultPanel({
           <button
             type="button"
             onClick={onAskNew}
-            className="flex flex-1 items-center justify-center rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white"
+            className="flex flex-1 items-center justify-center rounded-full bg-[#e8470b] px-4 py-2.5 text-sm font-semibold text-white"
           >
             Generate new
           </button>
@@ -484,14 +487,14 @@ function ResultPanel({
             type="button"
             disabled={!canGenerate}
             onClick={onGenerate}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#e8470b] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
           >
             {working || showProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Generate
           </button>
         )}
         {working ? (
-          <button type="button" onClick={onCancel} className="rounded-full border-2 border-neutral-800 bg-white px-4 py-2.5 text-sm">
+          <button type="button" onClick={onCancel} className="rounded-full border-2 border-[#e8470b] bg-white px-4 py-2.5 text-sm text-[#e8470b]">
             Cancel
           </button>
         ) : null}

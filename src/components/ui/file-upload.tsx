@@ -54,7 +54,7 @@ export function FileUpload({
 
   return (
     <section
-      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-neutral-800 bg-white p-5"
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-[#e8470b] bg-white p-5"
       {...getRootProps()}
     >
       <p className="text-base font-semibold">{label}</p>
@@ -63,7 +63,7 @@ export function FileUpload({
         type="button"
         onClick={() => fileInputRef.current?.click()}
         className={`mt-4 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed ${
-          isDragActive ? "border-neutral-950" : "border-neutral-400"
+          isDragActive ? "border-[#e8470b]" : "border-[#e8470b]/50"
         } bg-neutral-50`}
       >
         <input

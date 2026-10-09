@@ -9,8 +9,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "VTON",
-  description: "Personal virtual try-on. CatVTON is non-commercial.",
+  title: "ELYX",
+  description: "Wear it before you own it. Personal virtual try-on. CatVTON is non-commercial.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
