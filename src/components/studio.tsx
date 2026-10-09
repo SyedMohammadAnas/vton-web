@@ -1,6 +1,7 @@
 "use client";
 
 import { FileUpload } from "@/components/ui/file-upload";
+import NeuralBackground from "@/components/ui/flow-field-background";
 import { clearPending, listHistory, readPending, saveHistory, savePending, type HistoryRecord } from "@/lib/history";
 import { prepareUpload } from "@/lib/prepare-image";
 import { Download, Expand, Loader2, X } from "lucide-react";
@@ -300,25 +301,25 @@ export function Studio() {
   const working = phase.kind === "queued" || phase.kind === "processing";
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-black text-white">
-      <div className="flex h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-black px-3 py-3 lg:overflow-hidden">
-        <header className="flex w-full items-center justify-between gap-3 rounded-full border-2 border-neutral-500 bg-black px-5 py-3">
+    <div className="relative h-dvh overflow-hidden bg-white text-neutral-950">
+      <div className="flex h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden bg-white px-3 py-3 lg:overflow-hidden">
+        <header className="flex w-full items-center justify-between gap-3 rounded-full border-2 border-neutral-800 bg-white px-5 py-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold tracking-[0.18em]">VTON</p>
-            <p className="hidden truncate text-[11px] text-neutral-400 sm:block">
+            <p className="text-sm font-semibold tracking-[0.18em]">ELYX</p>
+            <p className="hidden truncate text-[11px] text-neutral-600 sm:block">
               Personal use. CatVTON is non-commercial.
             </p>
           </div>
           <button
             type="button"
-            className="shrink-0 rounded-full border-2 border-neutral-500 px-4 py-1.5 text-sm"
+            className="shrink-0 rounded-full border-2 border-neutral-800 px-4 py-1.5 text-sm"
             onMouseEnter={() => setHistoryOpen(true)}
             onClick={() => setHistoryOpen(true)}
           >
             History
           </button>
         </header>
-        <p className="text-center text-[11px] text-neutral-500 sm:hidden">
+        <p className="text-center text-[11px] text-neutral-600 sm:hidden">
           Personal use. CatVTON is non-commercial.
         </p>
 
@@ -399,14 +400,14 @@ function ResultPanel({
   const showImage = revealed && phase.kind === "done" && Boolean(resultUrl);
 
   return (
-    <section className="relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border-2 border-neutral-500 bg-black lg:min-h-0">
+    <section className="relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border-2 border-neutral-800 bg-white lg:min-h-0">
       <div className="flex items-center justify-between px-5 pt-5">
         <p className="text-base font-semibold">Result</p>
         {phase.kind !== "idle" && !showProgress ? (
-          <p className="text-sm text-neutral-300">{phaseLabel(phase)}</p>
+          <p className="text-sm text-neutral-600">{phaseLabel(phase)}</p>
         ) : null}
       </div>
-      <div className="relative m-5 min-h-0 flex-1 overflow-hidden rounded-2xl border-2 border-neutral-600 bg-black">
+      <div className="relative m-5 min-h-0 flex-1 overflow-hidden rounded-2xl border-2 border-neutral-700 bg-white">
         {showImage ? (
           <div className="group relative h-full">
             {/* Local object URLs cannot go through next/image. */}
@@ -416,7 +417,7 @@ function ResultPanel({
               <button
                 type="button"
                 aria-label="Download"
-                className="rounded-full border-2 border-neutral-500 bg-black p-2 text-white"
+                className="rounded-full border-2 border-neutral-800 bg-white p-2 text-neutral-950"
                 onClick={onDownload}
               >
                 <Download className="h-4 w-4" />
@@ -424,7 +425,7 @@ function ResultPanel({
               <button
                 type="button"
                 aria-label="Fullscreen"
-                className="rounded-full border-2 border-neutral-500 bg-black p-2 text-white"
+                className="rounded-full border-2 border-neutral-800 bg-white p-2 text-neutral-950"
                 onClick={(event) => onFullscreen(event.currentTarget.parentElement?.parentElement ?? null)}
               >
                 <Expand className="h-4 w-4" />
@@ -433,12 +434,21 @@ function ResultPanel({
           </div>
         ) : null}
         {showProgress ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-4xl font-semibold tabular-nums">{progress}%</p>
-          </div>
+          <>
+            <NeuralBackground
+              className="absolute inset-0"
+              color="#4338ca"
+              trailOpacity={0.14}
+              particleCount={280}
+              speed={1}
+            />
+            <div className="pointer-events-none relative z-10 flex h-full items-center justify-center">
+              <p className="text-4xl font-semibold tabular-nums">{progress}%</p>
+            </div>
+          </>
         ) : null}
         {!showProgress && !showImage ? (
-          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-neutral-400">
+          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-neutral-600">
             {phase.kind === "failed" ? phase.message : "The try-on appears here."}
           </div>
         ) : null}
@@ -449,14 +459,14 @@ function ResultPanel({
             <button
               type="button"
               onClick={onReset}
-              className="flex flex-1 items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black"
+              className="flex flex-1 items-center justify-center rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white"
             >
               Yes
             </button>
             <button
               type="button"
               onClick={onKeep}
-              className="flex flex-1 items-center justify-center rounded-full border-2 border-neutral-500 px-4 py-2.5 text-sm"
+              className="flex flex-1 items-center justify-center rounded-full border-2 border-neutral-800 bg-white px-4 py-2.5 text-sm"
             >
               No
             </button>
@@ -465,7 +475,7 @@ function ResultPanel({
           <button
             type="button"
             onClick={onAskNew}
-            className="flex flex-1 items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black"
+            className="flex flex-1 items-center justify-center rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white"
           >
             Generate new
           </button>
@@ -474,14 +484,14 @@ function ResultPanel({
             type="button"
             disabled={!canGenerate}
             onClick={onGenerate}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-40"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
           >
             {working || showProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Generate
           </button>
         )}
         {working ? (
-          <button type="button" onClick={onCancel} className="rounded-full border-2 border-neutral-500 px-4 py-2.5 text-sm">
+          <button type="button" onClick={onCancel} className="rounded-full border-2 border-neutral-800 bg-white px-4 py-2.5 text-sm">
             Cancel
           </button>
         ) : null}
@@ -492,11 +502,11 @@ function ResultPanel({
 
 function HistoryDrawer({ records, onClose }: { records: HistoryRecord[]; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/40">
+    <div className="fixed inset-0 z-40 flex justify-end bg-neutral-950/30">
       <button type="button" aria-label="Close history" className="h-full flex-1" onClick={onClose} />
       <aside
         onMouseLeave={onClose}
-        className="scrollbar-none h-full w-full max-w-md animate-[slide-in_220ms_ease-out] overflow-y-auto border-l-2 border-neutral-500 bg-black p-5"
+        className="scrollbar-none h-full w-full max-w-md animate-[slide-in_220ms_ease-out] overflow-y-auto border-l-2 border-neutral-800 bg-white p-5"
       >
         <div className="mb-4 flex items-center justify-between">
           <p className="text-base font-semibold">History</p>
@@ -505,7 +515,7 @@ function HistoryDrawer({ records, onClose }: { records: HistoryRecord[]; onClose
           </button>
         </div>
         {records.length === 0 ? (
-          <p className="text-sm text-neutral-400">No try-ons saved in this browser yet.</p>
+          <p className="text-sm text-neutral-600">No try-ons saved in this browser yet.</p>
         ) : (
           <ul className="flex flex-col gap-4">
             {records.map((record) => (
@@ -533,7 +543,7 @@ function HistoryImage({ blob, alt }: { blob: Blob; alt: string }) {
   }, [blob]);
   // Local object URLs cannot go through next/image.
   // eslint-disable-next-line @next/next/no-img-element
-  return <img ref={ref} alt={alt} className="aspect-[3/4] w-full rounded-xl object-cover bg-neutral-900" />;
+  return <img ref={ref} alt={alt} className="aspect-[3/4] w-full rounded-xl object-cover bg-neutral-200" />;
 }
 
 function wait(ms: number) {

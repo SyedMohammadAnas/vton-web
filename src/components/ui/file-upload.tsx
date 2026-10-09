@@ -54,17 +54,17 @@ export function FileUpload({
 
   return (
     <section
-      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-neutral-500 bg-black p-5"
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-neutral-800 bg-white p-5"
       {...getRootProps()}
     >
       <p className="text-base font-semibold">{label}</p>
-      <p className="mt-1 text-sm text-neutral-400">{hint}</p>
+      <p className="mt-1 text-sm text-neutral-600">{hint}</p>
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
         className={`mt-4 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed ${
-          isDragActive ? "border-white" : "border-neutral-600"
-        } bg-black`}
+          isDragActive ? "border-neutral-950" : "border-neutral-400"
+        } bg-neutral-50`}
       >
         <input
           ref={fileInputRef}
@@ -78,14 +78,14 @@ export function FileUpload({
           // eslint-disable-next-line @next/next/no-img-element
           <img ref={previewRef} alt={label} className="h-full w-full object-contain" />
         ) : (
-          <span className="px-6 text-center text-sm text-neutral-400">
+          <span className="px-6 text-center text-sm text-neutral-600">
             {isDragActive ? "Drop the photo" : "Click or drop a photo"}
           </span>
         )}
       </button>
-      {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
       {file ? (
-        <p className="mt-3 truncate text-sm text-neutral-300">
+        <p className="mt-3 truncate text-sm text-neutral-700">
           {file.name}
           <span className="ml-2 text-neutral-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
         </p>
