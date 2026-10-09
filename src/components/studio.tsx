@@ -234,8 +234,8 @@ export function Studio() {
         particleCount={420}
         speed={0.8}
       />
-      <div className="flex h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden p-4 lg:overflow-hidden">
-        <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full border border-white/15 bg-black/45 px-5 py-3 backdrop-blur-md">
+      <div className="flex h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden px-3 py-3 lg:overflow-hidden">
+        <header className="flex w-full items-center justify-between gap-3 rounded-full border border-white/15 bg-black/45 px-5 py-3 backdrop-blur-md">
           <div className="min-w-0">
             <p className="text-sm font-semibold tracking-[0.18em]">VTON</p>
             <p className="hidden truncate text-[11px] text-neutral-400 sm:block">
@@ -255,7 +255,7 @@ export function Studio() {
           Personal use. CatVTON is non-commercial.
         </p>
 
-        <main className="mx-auto grid min-h-0 w-full min-w-0 max-w-6xl flex-1 grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden">
+        <main className="grid min-h-0 w-full min-w-0 flex-1 grid-cols-1 gap-4 overflow-y-auto max-lg:auto-rows-[minmax(calc(100dvh-10rem),auto)] lg:grid-cols-3 lg:gap-8 lg:overflow-hidden">
           <FileUpload
             label="Person"
             hint="Full photo of the person"
@@ -311,7 +311,7 @@ function ResultPanel({
   onFullscreen: (target: HTMLElement | null) => void;
 }) {
   return (
-    <section className="relative flex min-h-[420px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-md lg:min-h-0">
+    <section className="relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-md lg:min-h-0">
       <div className="flex items-center justify-between px-5 pt-5">
         <p className="text-base font-semibold">Result</p>
         {phase.kind !== "idle" ? <p className="text-sm text-neutral-300">{phaseLabel(phase)}</p> : null}

@@ -66,7 +66,7 @@ export function FileUpload({
   });
 
   return (
-    <div className="h-full min-w-0 w-full max-w-full overflow-hidden" {...getRootProps()}>
+    <div className="h-full min-h-0 min-w-0 w-full max-w-full overflow-hidden" {...getRootProps()}>
       <motion.div
         onClick={() => fileInputRef.current?.click()}
         whileHover="animate"
