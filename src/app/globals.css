@@ -16,6 +16,15 @@ body {
   color: var(--foreground);
 }
 
+/* Keep scrolling, without a visible bar. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes slide-in {
   from {
     transform: translateX(100%);
