@@ -1,0 +1,420 @@
+"use client";
+
+import { FileUpload } from "@/components/ui/file-upload";
+import NeuralBackground from "@/components/ui/flow-field-background";
+import { clearPending, listHistory, readPending, saveHistory, savePending, type HistoryRecord } from "@/lib/history";
+import { prepareUpload } from "@/lib/prepare-image";
+import { Download, Expand, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+const ACTIVE_KEY = "vton-active-job";
+
+type JobStatus = "queued" | "processing" | "done" | "failed" | "cancelled";
+
+type JobBody = {
+  job_id: string;
+  status: JobStatus;
+  error: string | null;
+  queue_position: number | null;
+};
+
+type Phase =
+  | { kind: "idle" }
+  | { kind: "queued"; position: number | null }
+  | { kind: "processing" }
+  | { kind: "done" }
+  | { kind: "failed"; message: string };
+
+function phaseLabel(phase: Phase): string {
+  if (phase.kind === "queued") {
+    return phase.position ? `Queued, position ${phase.position}` : "Queued";
+  }
+  if (phase.kind === "processing") return "Generating";
+  if (phase.kind === "done") return "Done";
+  if (phase.kind === "failed") return phase.message;
+  return "";
+}
+
+export function Studio() {
+  const [person, setPerson] = useState<File | null>(null);
+  const [garment, setGarment] = useState<File | null>(null);
+  const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  const [resultUrl, setResultUrl] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [busy, setBusy] = useState(false);
+  const submitLock = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (resultUrl) URL.revokeObjectURL(resultUrl);
+    };
+  }, [resultUrl]);
+
+  useEffect(() => {
+    const jobId = sessionStorage.getItem(ACTIVE_KEY);
+    if (!jobId) return;
+    let cancelled = false;
+    void resume(jobId, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
+    // Resume once when the page loads. A later Generate call owns its own poll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!historyOpen) return;
+    void listHistory().then(setHistory).catch(() => setHistory([]));
+  }, [historyOpen]);
+
+  async function resume(jobId: string, isCancelled: () => boolean) {
+    setBusy(true);
+    setPhase({ kind: "processing" });
+    try {
+      await poll(jobId, isCancelled);
+    } finally {
+      if (!isCancelled()) setBusy(false);
+    }
+  }
+
+  async function poll(jobId: string, isCancelled: () => boolean) {
+    const started = Date.now();
+    let failures = 0;
+    while (!isCancelled()) {
+      if (Date.now() - started > 11 * 60 * 1000) {
+        setPhase({ kind: "failed", message: "The job took too long." });
+        sessionStorage.removeItem(ACTIVE_KEY);
+        await clearPending();
+        return;
+      }
+      try {
+        const response = await fetch(`/api/jobs/${jobId}`, { cache: "no-store" });
+        const body = (await response.json()) as JobBody & { error?: string };
+        if (!response.ok) {
+          throw new Error(body.error || "Status check failed.");
+        }
+        failures = 0;
+        if (body.status === "queued") {
+          setPhase({ kind: "queued", position: body.queue_position });
+        } else if (body.status === "processing") {
+          setPhase({ kind: "processing" });
+        } else if (body.status === "done") {
+          await finish(jobId);
+          return;
+        } else if (body.status === "cancelled") {
+          setPhase({ kind: "failed", message: "Cancelled." });
+          sessionStorage.removeItem(ACTIVE_KEY);
+          await clearPending();
+          return;
+        } else {
+          setPhase({ kind: "failed", message: body.error || "Generation failed." });
+          sessionStorage.removeItem(ACTIVE_KEY);
+          await clearPending();
+          return;
+        }
+      } catch (error) {
+        failures += 1;
+        if (failures > 8) {
+          setPhase({
+            kind: "failed",
+            message: error instanceof Error ? error.message : "Cannot reach the backend.",
+          });
+          return;
+        }
+      }
+      await wait(Math.min(8000, 2000 * 2 ** Math.min(failures, 2)));
+    }
+  }
+
+  async function finish(jobId: string) {
+    const response = await fetch(`/api/jobs/${jobId}/result`, { cache: "no-store" });
+    if (!response.ok) {
+      setPhase({ kind: "failed", message: "The result image is missing." });
+      return;
+    }
+    const result = await response.blob();
+    const pending = await readPending();
+    if (pending && pending.jobId === jobId) {
+      await saveHistory({
+        id: jobId,
+        createdAt: pending.createdAt,
+        person: pending.person,
+        garment: pending.garment,
+        result,
+      });
+      await clearPending();
+    }
+    sessionStorage.removeItem(ACTIVE_KEY);
+    const url = URL.createObjectURL(result);
+    setResultUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return url;
+    });
+    setPhase({ kind: "done" });
+  }
+
+  async function generate() {
+    if (!person || !garment || busy || submitLock.current) return;
+    if (sessionStorage.getItem(ACTIVE_KEY)) return;
+    submitLock.current = true;
+    setBusy(true);
+    setPhase({ kind: "processing" });
+    setResultUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return "";
+    });
+    let cancelled = false;
+    try {
+      const preparedPerson = await prepareUpload(person);
+      const preparedGarment = await prepareUpload(garment);
+      const form = new FormData();
+      form.append("person_image", preparedPerson);
+      form.append("garment_image", preparedGarment);
+      const response = await fetch("/api/tryon", { method: "POST", body: form });
+      const body = (await response.json()) as { job_id?: string; error?: string; status?: string };
+      if (!response.ok || !body.job_id) {
+        throw new Error(body.error || "Could not start the try-on.");
+      }
+      sessionStorage.setItem(ACTIVE_KEY, body.job_id);
+      await savePending({
+        jobId: body.job_id,
+        createdAt: Date.now(),
+        person: preparedPerson,
+        garment: preparedGarment,
+      });
+      if (body.status === "done") {
+        await finish(body.job_id);
+        return;
+      }
+      await poll(body.job_id, () => cancelled);
+    } catch (error) {
+      setPhase({
+        kind: "failed",
+        message: error instanceof Error ? error.message : "Could not start the try-on.",
+      });
+    } finally {
+      cancelled = true;
+      submitLock.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function cancel() {
+    const jobId = sessionStorage.getItem(ACTIVE_KEY);
+    if (!jobId) return;
+    await fetch(`/api/jobs/${jobId}/cancel`, { method: "POST" });
+  }
+
+  function download() {
+    if (!resultUrl) return;
+    const link = document.createElement("a");
+    link.href = resultUrl;
+    link.download = "vton-result.png";
+    link.click();
+  }
+
+  function fullscreen(target: HTMLElement | null) {
+    if (!target) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
+    }
+    void target.requestFullscreen();
+  }
+
+  const working = phase.kind === "queued" || phase.kind === "processing";
+
+  return (
+    <div className="relative h-dvh overflow-hidden bg-black text-white">
+      <NeuralBackground
+        className="pointer-events-none fixed inset-0 -z-10"
+        color="#818cf8"
+        trailOpacity={0.12}
+        particleCount={420}
+        speed={0.8}
+      />
+      <div className="flex h-full w-full min-w-0 flex-col gap-4 overflow-x-hidden p-4 lg:overflow-hidden">
+        <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full border border-white/15 bg-black/45 px-5 py-3 backdrop-blur-md">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold tracking-[0.18em]">VTON</p>
+            <p className="hidden truncate text-[11px] text-neutral-400 sm:block">
+              Personal use. CatVTON is non-commercial.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 rounded-full border border-white/15 px-4 py-1.5 text-sm"
+            onMouseEnter={() => setHistoryOpen(true)}
+            onClick={() => setHistoryOpen(true)}
+          >
+            History
+          </button>
+        </header>
+        <p className="text-center text-[11px] text-neutral-500 sm:hidden">
+          Personal use. CatVTON is non-commercial.
+        </p>
+
+        <main className="mx-auto grid min-h-0 w-full max-w-6xl flex-1 grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-3 lg:overflow-hidden">
+          <FileUpload
+            label="Person"
+            hint="Full photo of the person"
+            file={person}
+            onFile={setPerson}
+          />
+          <FileUpload
+            label="Garment"
+            hint="Upper-body garment only"
+            file={garment}
+            onFile={setGarment}
+          />
+          <ResultPanel
+            phase={phase}
+            resultUrl={resultUrl}
+            canGenerate={Boolean(person && garment) && !busy}
+            working={working}
+            onGenerate={() => void generate()}
+            onCancel={() => void cancel()}
+            onDownload={download}
+            onFullscreen={fullscreen}
+          />
+        </main>
+      </div>
+
+      {historyOpen ? (
+        <HistoryDrawer
+          records={history}
+          onClose={() => setHistoryOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function ResultPanel({
+  phase,
+  resultUrl,
+  canGenerate,
+  working,
+  onGenerate,
+  onCancel,
+  onDownload,
+  onFullscreen,
+}: {
+  phase: Phase;
+  resultUrl: string;
+  canGenerate: boolean;
+  working: boolean;
+  onGenerate: () => void;
+  onCancel: () => void;
+  onDownload: () => void;
+  onFullscreen: (target: HTMLElement | null) => void;
+}) {
+  return (
+    <section className="relative flex min-h-[420px] flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/35 backdrop-blur-md lg:min-h-0">
+      <div className="flex items-center justify-between px-5 pt-5">
+        <p className="text-base font-semibold">Result</p>
+        {phase.kind !== "idle" ? <p className="text-sm text-neutral-300">{phaseLabel(phase)}</p> : null}
+      </div>
+      <div className="relative m-5 min-h-0 flex-1 overflow-hidden rounded-2xl bg-black">
+        {working ? <NeuralBackground color="#a5b4fc" trailOpacity={0.16} particleCount={280} speed={1} /> : null}
+        {phase.kind === "done" && resultUrl ? (
+          <div className="group relative h-full">
+            {/* Local object URLs cannot go through next/image. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={resultUrl} alt="Try-on result" className="h-full w-full object-contain" />
+            <div className="absolute top-3 right-3 flex gap-2">
+              <button
+                type="button"
+                aria-label="Download"
+                className="rounded-full bg-black/60 p-2 text-white"
+                onClick={onDownload}
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Fullscreen"
+                className="rounded-full bg-black/60 p-2 text-white"
+                onClick={(event) => onFullscreen(event.currentTarget.parentElement?.parentElement ?? null)}
+              >
+                <Expand className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {!working && phase.kind !== "done" ? (
+          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-neutral-400">
+            {phase.kind === "failed" ? phase.message : "The try-on appears here."}
+          </div>
+        ) : null}
+      </div>
+      <div className="flex gap-2 px-5 pb-5">
+        <button
+          type="button"
+          disabled={!canGenerate}
+          onClick={onGenerate}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-40"
+        >
+          {working ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Generate
+        </button>
+        {working ? (
+          <button type="button" onClick={onCancel} className="rounded-full border border-white/20 px-4 py-2.5 text-sm">
+            Cancel
+          </button>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function HistoryDrawer({ records, onClose }: { records: HistoryRecord[]; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/40">
+      <button type="button" aria-label="Close history" className="h-full flex-1" onClick={onClose} />
+      <aside
+        onMouseLeave={onClose}
+        className="h-full w-full max-w-md animate-[slide-in_220ms_ease-out] overflow-y-auto border-l border-white/10 bg-neutral-950/95 p-5 backdrop-blur-md"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-base font-semibold">History</p>
+          <button type="button" aria-label="Close" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {records.length === 0 ? (
+          <p className="text-sm text-neutral-400">No try-ons saved in this browser yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {records.map((record) => (
+              <li key={record.id} className="grid grid-cols-3 gap-2">
+                <HistoryImage blob={record.person} alt="Person" />
+                <HistoryImage blob={record.garment} alt="Garment" />
+                <HistoryImage blob={record.result} alt="Result" />
+              </li>
+            ))}
+          </ul>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+function HistoryImage({ blob, alt }: { blob: Blob; alt: string }) {
+  const ref = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const url = URL.createObjectURL(blob);
+    node.src = url;
+    return () => URL.revokeObjectURL(url);
+  }, [blob]);
+  // Local object URLs cannot go through next/image.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img ref={ref} alt={alt} className="aspect-[3/4] w-full rounded-xl object-cover bg-neutral-900" />;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
